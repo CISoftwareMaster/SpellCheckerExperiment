@@ -1,4 +1,4 @@
 # Spell Checker: An Experiment
 
 ## Word list file
-https://github.com/dwyl/english-words/blob/master/words.txt
+From CS50x 2017 PSET 5
