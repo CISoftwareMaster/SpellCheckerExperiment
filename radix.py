@@ -1,5 +1,3 @@
-from enum import Enum
-
 class SERadixNode:
     def __init__(self):
         self.children = dict()
