@@ -1,19 +1,26 @@
 import io
 import re
+import pickle
+from radix import SERadixTree
 
 
-class SETrieNode:
+class SESpellChecker(SERadixTree):
     def __init__(self):
-        self.isWord = False
-        # create 27 children for this node
-        self.children = [None for _ in range(27)]
+        # initialise our radix tree structure
+        super().__init__()
 
-
-class SESpellChecker:
-    def __init__(self):
-        # initialise our (27) base Trie nodes
-        self.children = [SETrieNode() for _ in range(27)]
+        # compile our word cleaning pattern
+        self.cleanPattern = re.compile("[^A-Za-z]")
+        # compile our word search pattern
         self.wordPattern = re.compile("(\w+'\w+|\w+|\n)")
+
+    def checkWord(self, word):
+        # empty words are ignored
+        if word == ' ' or word == '':
+            return True
+
+        # handle default SERadixTree word search
+        return super().checkWord(word)
 
     def loadDictionary(self, dictionaryFile):
         # load our file
@@ -23,58 +30,6 @@ class SESpellChecker:
                 self.addWord(word)
             # close our file
             dictFile.close()
-
-    def addWord(self, word):
-        indexes = [j for j in [self.mapToIndex(i) for i in word] if j is not None]
-
-        # check if we got a valid index list
-        if len(indexes) > 0:
-            # pointer is set to one of our base Trie node
-            pointer = self.children[indexes[0]]
-
-            # create / follow branches until we reach the last node
-            for i in range(1, len(indexes)):
-                if pointer.children[indexes[i]] is None:
-                    pointer.children[indexes[i]] = SETrieNode()
-                pointer = pointer.children[indexes[i]]
-
-            # mark it as a word
-            pointer.isWord = True
-
-    def checkWord(self, word):
-        indexes = [j for j in [self.mapToIndex(i) for i in word] if j is not None]
-
-        # if it's a hyphen, ignore it
-        if word == '-':
-            return True
-
-        # check if we have a valid pathway
-        if len(indexes) > 0:
-            pointer = self.children[indexes[0]]
-
-            # follow branches until we reach the last node
-            for i in range(1, len(indexes)):
-                if pointer.children[indexes[i]] is not None:
-                    pointer = pointer.children[indexes[i]]
-                else:
-                    # it's not a word
-                    return False
-
-            # we found the leaf! Check its value
-            return pointer.isWord
-
-        # nothing to correct here
-        return True
-
-    def mapToIndex(self, char):
-        # make sure we're working on lowercase characters
-        char = char.lower()
-
-        # map it to an index value
-        if char == "'":
-            return 26
-        elif ord(char) >= ord('a') and ord(char) <= ord('z'):
-            return ord('z') - ord(char)
 
     def spellCheck(self, doc):
         # list of misspelled words
@@ -87,7 +42,11 @@ class SESpellChecker:
         # iterate through every word
         for i in range(len(words)):
             word = words[i]
+            olen = len(word)
             x = 0
+
+            # clean our word
+            word = self.cleanPattern.sub("", word)
 
             if word != '\n':
                 # words that end in 's
@@ -96,18 +55,34 @@ class SESpellChecker:
 
                     # start 2 characters earlier later
                     x = 2
-
                     # but still add those characters in our position counter
                     c = c + 2
 
                 # check if this word doesn't match
                 if not self.checkWord(word):
-                    misspellings.append({"start": c-x, "length": len(word)})
+                    misspellings.append({"start": c-x, "length": olen})
 
                 # update our character position
-                c += len(word) # including the space
+                c += olen # including the space
             else:
+                # newline character
                 c += 1
 
         # return a list of misspelled words
         return misspellings
+
+    def saveState(self, toFile):
+        try:
+            with io.open(toFile, "wb") as document:
+                document.write(pickle.dumps(self.__dict__))
+                document.close()
+        except:
+            print("There was an error saving the spell checker's state to a file!")
+
+    def restoreState(self, fromFile):
+        try:
+            with io.open(fromFile, "rb") as document:
+                self.__dict__ = pickle.loads(document.read())
+                document.close()
+        except:
+            print("There was an error restoring the spell checker's state from a file!")

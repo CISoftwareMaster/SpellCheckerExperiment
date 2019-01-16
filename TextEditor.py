@@ -1,8 +1,19 @@
+import os
 import sys
-from PyQt5.QtGui import QTextCharFormat, QSyntaxHighlighter
-from PyQt5.QtWidgets import QPlainTextEdit
+from PyQt5.QtGui import *
+from PyQt5.QtWidgets import *
+from PyQt5.QtCore import *
 from PyQt5.Qt import Qt, QApplication
 from SESpellChecker import SESpellChecker
+
+
+# data IDs
+WordCursor = 1213
+WordName = 1214
+
+
+def localFile(x):
+    return os.path.basename(os.path.dirname(sys.argv[0])).join(x)
 
 
 class SESpellcheckHighlighter(QSyntaxHighlighter):
@@ -17,8 +28,12 @@ class SESpellcheckHighlighter(QSyntaxHighlighter):
         self.mispelledWord.setUnderlineColor(Qt.red)
         self.mispelledWord.setUnderlineStyle(QTextCharFormat.SingleUnderline)
 
-        # load our english dictionary
-        self.spellchecker.loadDictionary("dictionary.txt")
+        # load our English dictionary
+        self.spellchecker.loadDictionary(localFile("dictionary.txt"))
+        # optimise our spellchecker's word tree
+        self.spellchecker.optimise()
+
+        print(f"Spellchecker Word Tree node count: {self.spellchecker.totalNodeCount():,}")
 
     def highlightBlock(self, text):
         # get misspellings
@@ -38,6 +53,8 @@ class TextEditor(QPlainTextEdit):
 
         # initialise our misspelling highlighter
         self.highlighter = SESpellcheckHighlighter(self.document())
+        # get reference to our spellchecker
+        self.spellchecker = self.highlighter.spellchecker
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
