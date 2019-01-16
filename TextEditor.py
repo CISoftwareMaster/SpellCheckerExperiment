@@ -12,10 +12,6 @@ WordCursor = 1213
 WordName = 1214
 
 
-def localFile(x):
-    return os.path.basename(os.path.dirname(sys.argv[0])).join(x)
-
-
 class SESpellcheckHighlighter(QSyntaxHighlighter):
     def __init__(self, doc):
         super().__init__(doc)
@@ -29,7 +25,7 @@ class SESpellcheckHighlighter(QSyntaxHighlighter):
         self.mispelledWord.setUnderlineStyle(QTextCharFormat.SingleUnderline)
 
         # load our English dictionary
-        self.spellchecker.loadDictionary(localFile("dictionary.txt"))
+        self.spellchecker.loadDictionary("dictionary.txt")
         # optimise our spellchecker's word tree
         self.spellchecker.optimise()
 
